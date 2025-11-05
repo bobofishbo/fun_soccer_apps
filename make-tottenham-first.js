@@ -1,6 +1,9 @@
 // Function to make Tottenham first place in Premier League standings table
 // This works with Google search results tables and similar standings tables
 
+(function() {
+'use strict';
+
 function makeTottenhamFirst() {
   // Find Tottenham row - use aria-label as it's more reliable than text
   // (the text might have been replaced by "Everything's fine 👍")
@@ -275,12 +278,24 @@ function initMakeTottenhamFirst() {
   }
 }
 
+// Make functions available globally for widget
+window.makeTottenhamFirst = makeTottenhamFirst;
+window.initMakeTottenhamFirst = initMakeTottenhamFirst;
+
 // Auto-run if this script is loaded directly
 if (typeof window !== 'undefined') {
-  initMakeTottenhamFirst();
+  // Check settings before initializing
+  chrome.storage.local.get(['tottenhamSettings'], (result) => {
+    const settings = result.tottenhamSettings || { enabled: true };
+    if (settings.enabled !== false) {
+      initMakeTottenhamFirst();
+    }
+  });
 }
 
 // Export for use in other files
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { makeTottenhamFirst, initMakeTottenhamFirst };
 }
+
+})();

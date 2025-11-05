@@ -224,7 +224,18 @@ function makeTottenhamPerfect() {
     const ariaElements = lastFiveCell.querySelectorAll('[aria-labelledby*="l5l-"]');
     console.log(`[makeTottenhamPerfect] Found ${ariaElements.length} elements with aria-labelledby l5l-`);
     
+    // Only update aria-labelledby for matches that have been played (MP value)
+    // Total active circles should be i = min(MP, 5)
+    const ariaElementsToUpdate = Math.min(mpValue, 5, ariaElements.length);
+    console.log(`[makeTottenhamPerfect] Will update ${ariaElementsToUpdate} aria-labelledby elements (MP=${mpValue}, max=5)`);
+    
     ariaElements.forEach((elem, index) => {
+      // Only update aria-labelledby for matches that have been played
+      if (index >= ariaElementsToUpdate) {
+        console.log(`[makeTottenhamPerfect]   Aria element ${index + 1}: Skipping (future match placeholder)`);
+        return; // Skip empty placeholders for future matches
+      }
+      
       const ariaLabel = elem.getAttribute('aria-labelledby') || '';
       console.log(`[makeTottenhamPerfect]   Aria element ${index + 1}: aria-labelledby="${ariaLabel}", classes="${elem.className}"`);
       // Replace loss (l), draw (d), or tie (t) with win (w) in aria-labelledby
@@ -239,7 +250,24 @@ function makeTottenhamPerfect() {
     const svgIcons = lastFiveCell.querySelectorAll('svg');
     console.log(`[makeTottenhamPerfect] Found ${svgIcons.length} SVG elements`);
     
+    // Only update icons for matches that have been played (MP value)
+    // Total active circles should be i = min(MP, 5)
+    // Leave the remaining icons as empty placeholders for future matches
+    const iconsToUpdate = Math.min(mpValue, 5, svgIcons.length);
+    console.log(`[makeTottenhamPerfect] Will update ${iconsToUpdate} icons (MP=${mpValue}, max=5, total icons=${svgIcons.length})`);
+    console.log(`[makeTottenhamPerfect] Active circles: ${iconsToUpdate}, Empty placeholders: ${svgIcons.length - iconsToUpdate}`);
+    
     svgIcons.forEach((svg, index) => {
+      // Only update icons for matches that have been played (first i icons where i = min(MP, 5))
+      if (index >= iconsToUpdate) {
+        console.log(`[makeTottenhamPerfect]   SVG ${index + 1}: Skipping (future match placeholder, index ${index} >= ${iconsToUpdate})`);
+        return; // Skip empty placeholders for future matches
+      }
+      
+      // Ensure first icon (index 0) is always processed (regular green circle with tick, no border)
+      if (index === 0) {
+        console.log(`[makeTottenhamPerfect]   SVG ${index + 1}: Processing FIRST icon (regular green circle, no border)`);
+      }
       console.log(`[makeTottenhamPerfect]   SVG ${index + 1}:`);
       console.log(`[makeTottenhamPerfect]     Classes: "${svg.className}"`);
       console.log(`[makeTottenhamPerfect]     ViewBox: "${svg.getAttribute('viewBox')}"`);
@@ -385,9 +413,14 @@ function makeTottenhamPerfect() {
         }
       });
       
-      // Add white circle border to the first (most recent) and last (oldest) games
-      const isFirstOrLast = index === 0 || index === svgIcons.length - 1;
-      if (isFirstOrLast) {
+      // Add white circle border only to the last (oldest) played game
+      // First icon (index 0) should be regular green circle with tick, no border
+      // Only apply to actually played matches, not future placeholders
+      // Last active icon: index iconsToUpdate - 1 (oldest played match)
+      const isLastActive = index === iconsToUpdate - 1;
+      
+      if (isLastActive) {
+        console.log(`[makeTottenhamPerfect]     Adding white border to last (oldest) icon (index ${index})`);
         const whiteCirclePath = 'M11 3a8 8 0 1 1 0 16 8 8 0 0 1 0-16';
         const existingPaths = Array.from(svg.querySelectorAll('path'));
         
@@ -417,8 +450,6 @@ function makeTottenhamPerfect() {
           return pathD === whiteCirclePath;
         });
         
-        const positionLabel = index === 0 ? 'first (most recent)' : 'last (oldest)';
-        
         if (!whiteBorderPath) {
           // Create white circle border path with correct class
           const newWhiteBorder = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -445,7 +476,7 @@ function makeTottenhamPerfect() {
               svg.appendChild(newWhiteBorder);
             }
           }
-          console.log(`[makeTottenhamPerfect]     SVG ${index + 1} (${positionLabel}): Added white circle border with class oUnRP`);
+          console.log(`[makeTottenhamPerfect]     SVG ${index + 1} (last active): Added white circle border with class oUnRP`);
         } else {
           // Ensure existing white border has correct class and styling
           whiteBorderPath.setAttribute('class', 'oUnRP');
@@ -456,7 +487,7 @@ function makeTottenhamPerfect() {
           whiteBorderPath.style.fill = 'none';
           whiteBorderPath.style.stroke = '#ffffff';
           whiteBorderPath.style.strokeWidth = '1';
-          console.log(`[makeTottenhamPerfect]     SVG ${index + 1} (${positionLabel}): Ensured white circle border is styled correctly`);
+          console.log(`[makeTottenhamPerfect]     SVG ${index + 1} (last active): Ensured white circle border is styled correctly`);
         }
       }
       
@@ -520,7 +551,22 @@ function makeTottenhamPerfect() {
     const finalResultDivs = lastFiveCell.querySelectorAll('div[aria-labelledby*="l5l-"]');
     console.log(`[makeTottenhamPerfect] Final pass: Found ${finalResultDivs.length} result divs`);
     
+    // Only process icons for matches that have been played (MP value)
+    // Total active circles should be i = min(MP, 5)
+    const finalDivsToUpdate = Math.min(mpValue, 5, finalResultDivs.length);
+    console.log(`[makeTottenhamPerfect] Final pass: Will update ${finalDivsToUpdate} divs (MP=${mpValue}, max=5)`);
+    
     finalResultDivs.forEach((div, index) => {
+      // Only update divs for matches that have been played (first i divs where i = min(MP, 5))
+      if (index >= finalDivsToUpdate) {
+        console.log(`[makeTottenhamPerfect] Final pass: Skipping div ${index + 1} (future match placeholder, index ${index} >= ${finalDivsToUpdate})`);
+        return; // Skip empty placeholders for future matches
+      }
+      
+      // Ensure first div (index 0) is always processed (regular green circle with tick, no border)
+      if (index === 0) {
+        console.log(`[makeTottenhamPerfect] Final pass: Processing FIRST div (regular green circle, no border)`);
+      }
       const ariaLabel = div.getAttribute('aria-labelledby') || '';
       if (ariaLabel.includes('l5l-')) {
         // Ensure aria-labelledby is set to win
@@ -569,9 +615,14 @@ function makeTottenhamPerfect() {
             }
           });
           
-          // Add white circle border to the first (most recent) and last (oldest) games
-          const isFirstOrLast = index === 0 || index === finalResultDivs.length - 1;
-          if (isFirstOrLast) {
+          // Add white circle border only to the last (oldest) played game
+          // First icon (index 0) should be regular green circle with tick, no border
+          // Only apply to actually played matches, not future placeholders
+          // Last active icon: index finalDivsToUpdate - 1 (oldest played match)
+          const isLastActive = index === finalDivsToUpdate - 1;
+          
+          if (isLastActive) {
+            console.log(`[makeTottenhamPerfect] Final pass: Adding white border to last (oldest) icon (index ${index})`);
             const whiteCirclePath = 'M11 3a8 8 0 1 1 0 16 8 8 0 0 1 0-16';
             const existingPaths = Array.from(svg.querySelectorAll('path'));
             
@@ -601,8 +652,6 @@ function makeTottenhamPerfect() {
               return pathD === whiteCirclePath;
             });
             
-            const positionLabel = index === 0 ? 'first (most recent)' : 'last (oldest)';
-            
             if (!whiteBorderPath) {
               // Create white circle border path with correct class
               const newWhiteBorder = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -629,7 +678,7 @@ function makeTottenhamPerfect() {
                   svg.appendChild(newWhiteBorder);
                 }
               }
-              console.log(`[makeTottenhamPerfect] Final pass: Added white circle border to ${positionLabel} with class oUnRP`);
+              console.log(`[makeTottenhamPerfect] Final pass: Added white circle border to last active icon with class oUnRP`);
             } else {
               // Ensure existing white border has correct class and styling
               whiteBorderPath.setAttribute('class', 'oUnRP');
@@ -640,7 +689,7 @@ function makeTottenhamPerfect() {
               whiteBorderPath.style.fill = 'none';
               whiteBorderPath.style.stroke = '#ffffff';
               whiteBorderPath.style.strokeWidth = '1';
-              console.log(`[makeTottenhamPerfect] Final pass: Ensured white circle border on ${positionLabel} is styled correctly`);
+              console.log(`[makeTottenhamPerfect] Final pass: Ensured white circle border on last active icon is styled correctly`);
             }
           }
         }
@@ -697,9 +746,19 @@ function initMakeTottenhamPerfect() {
   }
 }
 
+// Make functions available globally for widget
+window.makeTottenhamPerfect = makeTottenhamPerfect;
+window.initMakeTottenhamPerfect = initMakeTottenhamPerfect;
+
 // Auto-run if this script is loaded directly
 if (typeof window !== 'undefined') {
-  initMakeTottenhamPerfect();
+  // Check settings before initializing
+  chrome.storage.local.get(['tottenhamSettings'], (result) => {
+    const settings = result.tottenhamSettings || { enabled: true };
+    if (settings.enabled !== false) {
+      initMakeTottenhamPerfect();
+    }
+  });
 }
 
 // Export for use in other files

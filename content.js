@@ -220,4 +220,10 @@ function init() {
   }
 }
 
-init();
+// Check settings before initializing
+chrome.storage.local.get(['tottenhamSettings'], (result) => {
+  const settings = result.tottenhamSettings || { enabled: true };
+  if (settings.enabled !== false) {
+    init();
+  }
+});

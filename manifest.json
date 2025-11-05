@@ -3,15 +3,26 @@
     "name": "Tottenham are kings of london",
     "version": "1.0",
     "description": "Tottenham fans' personalized mental health protection tool. Make them think they are a good team on the internet.",
+    "permissions": ["storage"],
     "content_scripts": [
       {
         "matches": ["<all_urls>"],
-        "js": ["content.js", "make-tottenham-first.js", "make-tottenham-perfect.js"],
+        "js": ["content.js", "make-tottenham-first.js", "make-tottenham-perfect.js", "widget.js"],
         "run_at": "document_idle"
       }
     ],
+    "action": {
+      "default_title": "Tottenham are kings of london",
+      "default_icon": {
+        "16": "icon.png",
+        "48": "icon.png",
+        "128": "icon.png"
+      }
+    },
     "icons": {
-      "48": "icon.png"
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
     }
   }
   
