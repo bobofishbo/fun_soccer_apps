@@ -11,15 +11,43 @@ const defaultSettings = {
 
 // Get settings from storage
 function getSettings(callback) {
-  chrome.storage.local.get(['liverpoolSettings'], (result) => {
-    const settings = result.liverpoolSettings || defaultSettings;
-    callback(settings);
-  });
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.get(['liverpoolSettings'], (result) => {
+        try {
+          const settings = result.liverpoolSettings || defaultSettings;
+          callback(settings);
+        } catch (error) {
+          console.error('[Liverpool Widget] Error processing settings:', error);
+          callback(defaultSettings);
+        }
+      });
+    } else {
+      // Fallback if chrome.storage is not available
+      console.warn('[Liverpool Widget] chrome.storage not available, using default settings');
+      callback(defaultSettings);
+    }
+  } catch (error) {
+    console.error('[Liverpool Widget] Error accessing chrome.storage:', error);
+    callback(defaultSettings);
+  }
 }
 
 // Save settings to storage
 function saveSettings(settings) {
-  chrome.storage.local.set({ liverpoolSettings: settings });
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.set({ liverpoolSettings: settings }, () => {
+        if (chrome.runtime.lastError) {
+          console.error('[Liverpool Widget] Error saving settings:', chrome.runtime.lastError);
+        }
+      });
+    } else {
+      console.warn('[Liverpool Widget] chrome.storage not available, cannot save settings');
+    }
+  } catch (error) {
+    console.error('[Liverpool Widget] Error saving settings:', error);
+  }
 }
 
 // Create the sidebar widget
@@ -33,27 +61,8 @@ function createWidget() {
   widget.id = 'liverpool-sidebar-widget';
   widget.classList.add('collapsed');
   
-  // Ensure widget is positioned on the right side by default
-  widget.style.right = '0';
-  
   getSettings((settings) => {
     const isEnabled = settings.enabled !== false;
-    const widgetVisible = settings.widgetVisible !== false;
-    
-    // Restore position if saved
-    if (settings.widgetTop !== null && settings.widgetTop !== undefined) {
-      widget.style.top = settings.widgetTop + 'px';
-      widget.style.transform = 'none';
-    } else {
-      // Default to centered vertically on the right side
-      widget.style.top = '50%';
-      widget.style.transform = 'translateY(-50%)';
-    }
-    
-    // Hide widget if it was closed
-    if (!widgetVisible) {
-      widget.style.display = 'none';
-    }
     
     widget.innerHTML = `
       <div class="liverpool-sidebar-toggle" id="liverpool-sidebar-toggle">
@@ -83,26 +92,24 @@ function createWidget() {
     const style = document.createElement('style');
     style.textContent = `
       #liverpool-sidebar-widget {
-        position: fixed;
-        right: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        z-index: 999999;
+        position: fixed !important;
+        right: 0 !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        z-index: 2147483647 !important; /* Maximum z-index value */
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        display: flex;
+        display: flex !important;
         align-items: center;
         flex-direction: row-reverse;
         user-select: none;
+        pointer-events: auto !important;
+        visibility: visible !important;
+        opacity: 1 !important;
       }
       
-      #liverpool-sidebar-widget.dragging {
-        transition: none !important;
-      }
       
       #liverpool-sidebar-widget.collapsed .liverpool-sidebar-content {
         transform: translateX(100%);
-        opacity: 0;
-        pointer-events: none;
         width: 0;
         overflow: hidden;
       }
@@ -115,20 +122,8 @@ function createWidget() {
         display: flex;
         align-items: center;
         justify-content: center;
-        cursor: move;
-        box-shadow: -4px 0 12px rgba(0, 0, 0, 0.15);
-        transition: all 0.3s ease;
+        cursor: pointer;
         flex-shrink: 0;
-        margin-right: 0;
-      }
-      
-      .liverpool-sidebar-toggle:hover {
-        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-        box-shadow: -4px 0 16px rgba(0, 0, 0, 0.25);
-      }
-      
-      .liverpool-sidebar-toggle:active {
-        cursor: grabbing;
       }
       
       .liverpool-sidebar-icon {
@@ -141,10 +136,8 @@ function createWidget() {
         width: 280px;
         background: white;
         border-radius: 12px 0 0 12px;
-        box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
-        transition: transform 0.3s ease, opacity 0.3s ease, width 0.3s ease;
+        transition: transform 0.3s ease;
         transform: translateX(0);
-        opacity: 1;
         margin-right: 0;
         overflow: hidden;
       }
@@ -252,93 +245,34 @@ function createWidget() {
     `;
 
     document.head.appendChild(style);
-    document.body.appendChild(widget);
-
+    
+    // Ensure body exists and append widget
+    if (!document.body) {
+      console.error('[Liverpool Widget] document.body not available');
+      return;
+    }
+    
+    // Try to append to body, with fallback to document.documentElement
+    try {
+      document.body.appendChild(widget);
+    } catch (error) {
+      console.error('[Liverpool Widget] Error appending to body:', error);
+      // Fallback: try appending to documentElement
+      try {
+        document.documentElement.appendChild(widget);
+      } catch (e) {
+        console.error('[Liverpool Widget] Error appending to documentElement:', e);
+      }
+    }
+    
     // Add event listeners
     const toggleBtn = document.getElementById('liverpool-sidebar-toggle');
     const closeBtn = document.getElementById('liverpool-sidebar-close');
     const masterToggle = document.getElementById('toggle-master');
 
-    // Drag functionality
-    let isDragging = false;
-    let hasDragged = false;
-    let dragStartY = 0;
-    let widgetStartTop = 0;
-    let justDragged = false; // Track if we just finished a drag
-
-    function getWidgetTop() {
-      const currentTop = widget.style.top;
-      if (currentTop && currentTop !== 'auto') {
-        return parseInt(currentTop);
-      }
-      // If no explicit top, calculate from current position
-      const rect = widget.getBoundingClientRect();
-      return rect.top;
-    }
-
-    toggleBtn.addEventListener('mousedown', (e) => {
-      isDragging = false;
-      hasDragged = false;
-      dragStartY = e.clientY;
-      widgetStartTop = getWidgetTop();
-    });
-
-    document.addEventListener('mousemove', (e) => {
-      if (dragStartY === 0) return; // Not in potential drag state
-      
-      const deltaY = Math.abs(e.clientY - dragStartY);
-      
-      // Start dragging if mouse moved more than 5px
-      if (deltaY > 5 && !isDragging) {
-        isDragging = true;
-        hasDragged = true;
-        widget.classList.add('dragging');
-        document.body.style.userSelect = 'none';
-      }
-      
-      if (isDragging) {
-        const currentDeltaY = e.clientY - dragStartY;
-        let newTop = widgetStartTop + currentDeltaY;
-        
-        // Constrain to viewport bounds
-        const widgetHeight = widget.offsetHeight;
-        const maxTop = window.innerHeight - widgetHeight;
-        newTop = Math.max(0, Math.min(newTop, maxTop));
-        
-        widget.style.top = newTop + 'px';
-        widget.style.transform = 'none';
-      }
-    });
-
-    document.addEventListener('mouseup', (e) => {
-      if (isDragging) {
-        // Save position after drag
-        const currentTop = getWidgetTop();
-        getSettings((settings) => {
-          settings.widgetTop = currentTop;
-          saveSettings(settings);
-        });
-        justDragged = true;
-        // Reset justDragged after a short delay
-        setTimeout(() => {
-          justDragged = false;
-        }, 200);
-      }
-      
-      // Reset drag state
-      isDragging = false;
-      hasDragged = false;
-      dragStartY = 0;
-      widget.classList.remove('dragging');
-      document.body.style.userSelect = '';
-    });
-    
-    // Click handler for toggling
-    toggleBtn.addEventListener('click', (e) => {
-      // Only toggle if we didn't just drag
-      if (!justDragged && !hasDragged) {
-        widget.classList.toggle('collapsed');
-      }
+    // Click to toggle open/close
+    toggleBtn.addEventListener('click', () => {
+      widget.classList.toggle('collapsed');
     });
 
     // Close sidebar (collapse)

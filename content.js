@@ -67,6 +67,31 @@ function replaceTextInNode(textNode) {
   let hasMatch = false;
   let newText = originalText;
   
+  // Replace specific headline about title defense
+  // Match variations: "Liverpool's" or "Liverpool", "defense" or "defence", flexible spacing
+  const titleDefenseRegex = /Liverpool'?s?\s+Premier\s+League\s+title\s+defen[cs]e\s+may\s+already\s+be\s+over\s+after\s+loss\s+at\s+Man\s+City/gi;
+  const replacedTitleDefense = newText.replace(titleDefenseRegex, "King of Merseyside Premier League title defence looking strong after domination at Man City");
+  if (replacedTitleDefense !== newText) {
+    newText = replacedTitleDefense;
+    hasMatch = true;
+  }
+  
+  // Replace "Liverpool's woes continue as they lose to Man City"
+  const woesContinueRegex = /Liverpool'?s?\s+woes\s+continue\s+as\s+they\s+lose\s+to\s+Man\s+City/gi;
+  const replacedWoes = newText.replace(woesContinueRegex, "King of Merseyside's joy continue as they win at Man City");
+  if (replacedWoes !== newText) {
+    newText = replacedWoes;
+    hasMatch = true;
+  }
+  
+  // Replace any sentence containing "to Man City after Real"
+  // Check if the text contains this pattern, then replace the entire text node content
+  if (/to\s+Man\s+City\s+after\s+Real/i.test(newText)) {
+    // Replace the entire sentence with the new text
+    newText = "King of Merseyside's title defence going strong, and wins over Man City and Real Madrid showcase strong consistency";
+    hasMatch = true;
+  }
+  
   // First, replace "6th in premier league" with "1st" (case-insensitive)
   const sixthInPremierRegex = /\b6th\s+in\s+premier\s+league\b/gi;
   const replacedSixth = newText.replace(sixthInPremierRegex, "1st in Premier League");
@@ -104,9 +129,17 @@ function replaceTextInNode(textNode) {
   
   // Replace "lose" with "dominates" (case-insensitive, whole word only)
   const loseRegex = /\blose\b/gi;
-  const replacedLose = newText.replace(loseRegex, "dominates");
+  const replacedLose = newText.replace(loseRegex, "dominate");
   if (replacedLose !== newText) {
     newText = replacedLose;
+    hasMatch = true;
+  }
+  
+  // Replace "woes" with "joy" (case-insensitive, whole word only)
+  const woesGeneralRegex = /\bwoes\b/gi;
+  const replacedWoesGeneral = newText.replace(woesGeneralRegex, "joy");
+  if (replacedWoesGeneral !== newText) {
+    newText = replacedWoesGeneral;
     hasMatch = true;
   }
   
