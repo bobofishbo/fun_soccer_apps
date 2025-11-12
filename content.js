@@ -1,9 +1,9 @@
 // Words we don't want to see
-const bannedWords = ["Tottenham", "Spurs", "Hotspur"];
-const replacementText = "King of London";
+const bannedWords = ["Liverpool"];
+const replacementText = "King of Merseyside";
 // Full phrase that should be replaced as one unit
-const fullPhrase = "Tottenham Hotspur";
-const fullPhraseReplacement = "King of London";
+const fullPhrase = "Liverpool";
+const fullPhraseReplacement = "King of Merseyside";
 
 // Track processed nodes to avoid re-processing
 const processedNodes = new WeakSet();
@@ -75,8 +75,8 @@ function replaceTextInNode(textNode) {
     hasMatch = true;
   }
   
-  // Then, replace the full phrase "Tottenham Hotspur" as one unit
-  // Match "Tottenham Hotspur" (case-insensitive) with word boundaries
+  // Then, replace the full phrase "Liverpool" as one unit
+  // Match "Liverpool" (case-insensitive) with word boundaries
   const fullPhraseRegex = new RegExp(`\\b${fullPhrase.replace(/\s+/g, '\\s+')}\\b`, "gi");
   const replacedFullPhrase = newText.replace(fullPhraseRegex, fullPhraseReplacement);
   if (replacedFullPhrase !== newText) {
@@ -85,26 +85,30 @@ function replaceTextInNode(textNode) {
   }
   
   // Then replace individual words
-  // Since we already replaced "Tottenham Hotspur" with "Kings of London",
-  // the individual words won't be found in the replaced text, so we're safe
   bannedWords.forEach(word => {
-    let replacedText;
-    // For "Tottenham", only replace if not followed by " Hotspur" (using negative lookahead)
-    if (word === "Tottenham") {
-      const tottenhamRegex = new RegExp(`\\b${word}\\b(?!\\s+Hotspur)`, "gi");
-      replacedText = newText.replace(tottenhamRegex, replacementText);
-    } else {
-      // For other words (Spurs, Hotspur), replace normally
-      // Note: "Hotspur" that was part of "Tottenham Hotspur" is already replaced
-      const wordRegex = new RegExp(`\\b${word}\\b`, "gi");
-      replacedText = newText.replace(wordRegex, replacementText);
-    }
-    
+    const wordRegex = new RegExp(`\\b${word}\\b`, "gi");
+    const replacedText = newText.replace(wordRegex, replacementText);
     if (replacedText !== newText) {
       newText = replacedText;
       hasMatch = true;
     }
   });
+
+  // Replace "lose" with "dominates" (case-insensitive, whole word only)
+  const lostRegex = /\blost\b/gi;
+  const replacedLost = newText.replace(lostRegex, "won");
+  if (replacedLost !== newText) {
+    newText = replacedLost;
+    hasMatch = true;
+  }
+  
+  // Replace "lose" with "dominates" (case-insensitive, whole word only)
+  const loseRegex = /\blose\b/gi;
+  const replacedLose = newText.replace(loseRegex, "dominates");
+  if (replacedLose !== newText) {
+    newText = replacedLose;
+    hasMatch = true;
+  }
   
   if (hasMatch && newText !== originalText) {
     try {
@@ -122,7 +126,7 @@ function replaceTextInNode(textNode) {
 }
 
 // Replace text in all text nodes, being very conservative
-function replaceTottenhamText(root = document.body) {
+function replaceLiverpoolText(root = document.body) {
   if (!root) return;
   
   // Use TreeWalker to find all text nodes, but filter carefully
@@ -162,7 +166,7 @@ let timeoutId = null;
 function debouncedReplace() {
   if (timeoutId) clearTimeout(timeoutId);
   timeoutId = setTimeout(() => {
-    replaceTottenhamText();
+    replaceLiverpoolText();
   }, 300);
 }
 
@@ -199,7 +203,7 @@ function init() {
         if (document.body.children.length > 0 || document.body.textContent.trim().length > 100) {
           initObserver();
           // Delay first replacement to let page fully render
-          setTimeout(replaceTottenhamText, 2000);
+          setTimeout(replaceLiverpoolText, 2000);
         } else {
           // If not ready, try again
           setTimeout(waitForReady, 500);
@@ -221,8 +225,8 @@ function init() {
 }
 
 // Check settings before initializing
-chrome.storage.local.get(['tottenhamSettings'], (result) => {
-  const settings = result.tottenhamSettings || { enabled: true };
+chrome.storage.local.get(['liverpoolSettings'], (result) => {
+  const settings = result.liverpoolSettings || { enabled: true };
   if (settings.enabled !== false) {
     init();
   }

@@ -1,18 +1,18 @@
 {
     "manifest_version": 3,
-    "name": "Tottenham are kings of london",
+    "name": "Liverpool are kings of Merseyside",
     "version": "1.0",
-    "description": "Tottenham fans' personalized mental health protection tool. Make them think they are a good team on the internet.",
+    "description": "Liverpool fans' personalized mental health protection tool. Make them think they are a good team on the internet.",
     "permissions": ["storage"],
     "content_scripts": [
       {
         "matches": ["<all_urls>"],
-        "js": ["content.js", "make-tottenham-first.js", "make-tottenham-perfect.js", "widget.js"],
+        "js": ["content.js", "make-liverpool-first.js", "make-liverpool-perfect.js", "widget.js", "replace-liverpool-scores.js"],
         "run_at": "document_idle"
       }
     ],
     "action": {
-      "default_title": "Tottenham are kings of london",
+      "default_title": "Liverpool are kings of Merseyside",
       "default_icon": {
         "16": "icon.png",
         "48": "icon.png",
@@ -23,6 +23,12 @@
       "16": "icon.png",
       "48": "icon.png",
       "128": "icon.png"
-    }
+    },
+    "web_accessible_resources": [
+      {
+        "resources": ["icon.png"],
+        "matches": ["<all_urls>"]
+      }
+    ]
   }
   

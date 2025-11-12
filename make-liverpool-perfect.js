@@ -1,25 +1,76 @@
-// Function to make Tottenham's stats perfect
+// Function to make Liverpool's stats perfect
 // W = MP, D = 0, L = 0, GF = 100, GA = 0, Last 5 = all wins
 
-function makeTottenhamPerfect() {
-  console.log('[makeTottenhamPerfect] Starting...');
+function makeLiverpoolPerfect() {
+  console.log('[makeLiverpoolPerfect] Starting...');
   
-  // Find Tottenham row - use aria-label as it's more reliable than text
-  const tottenhamRow = Array.from(document.querySelectorAll('tr')).find(row => {
+  // First, find the Premier League standings table (not match result tables)
+  // Standings tables have many rows (10-20 teams) and stats columns
+  const allTables = Array.from(document.querySelectorAll('table'));
+  let standingsTable = null;
+  
+  console.log('[makeLiverpoolPerfect] Searching', allTables.length, 'tables for standings table...');
+  
+  for (const table of allTables) {
+    const allTableRows = table.querySelectorAll('tr');
+    const rowCount = allTableRows.length;
+    const tableText = table.textContent || '';
+    // Stats can be concatenated (e.g., "MPMatches", "WWins") or separate, so check for both patterns
+    const hasStatsColumns = tableText.match(/\b(MP|W|D|L|GF|GA|GD|Pts)\b/i) || 
+                           tableText.match(/(MP|W|D|L|GF|GA|GD|Pts)(Matches|Wins|Draws|Losses|Goals|Points)/i) ||
+                           tableText.match(/Rank.*Club.*MP/i); // Alternative: check for "Rank" and "Club" and "MP" pattern
+    
+    console.log('[makeLiverpoolPerfect] Table check: rows=', rowCount, ', hasStats=', !!hasStatsColumns, ', text preview:', tableText.substring(0, 100));
+    
+    if (rowCount >= 8 && hasStatsColumns) {
+      standingsTable = table;
+      console.log('[makeLiverpoolPerfect] ✅ Found standings table with', rowCount, 'rows');
+      break;
+    }
+  }
+  
+  if (!standingsTable) {
+    console.log('[makeLiverpoolPerfect] ❌ Premier League standings table not found (checked', allTables.length, 'tables)');
+    return false;
+  }
+  
+  console.log('[makeLiverpoolPerfect] ✅ Found standings table');
+
+  // Now find Liverpool row within the standings table
+  // Use aria-label as it's more reliable than text
+  // Also check for "King of Merseyside" since content.js replaces Liverpool text
+  const liverpoolRow = Array.from(standingsTable.querySelectorAll('tr')).find(row => {
+    // Check aria-label first
     const ariaLabel = row.getAttribute('aria-label');
-    return ariaLabel && ariaLabel.toLowerCase().includes('tottenham');
+    if (ariaLabel) {
+      const labelLower = ariaLabel.toLowerCase();
+      if (labelLower.includes('liverpool') || labelLower.includes('king of merseyside')) {
+        return true;
+      }
+    }
+    
+    // Fallback: check text content of the row
+    const rowText = row.textContent || '';
+    const rowTextLower = rowText.toLowerCase();
+    return rowTextLower.includes('liverpool') || rowTextLower.includes('king of merseyside');
   });
 
-  if (!tottenhamRow) {
-    console.log('[makeTottenhamPerfect] ❌ Tottenham row not found');
+  if (!liverpoolRow) {
+    console.log('[makeLiverpoolPerfect] ❌ Liverpool row not found in standings table');
     return false;
   }
 
-  console.log('[makeTottenhamPerfect] ✅ Found Tottenham row');
+  console.log('[makeLiverpoolPerfect] ✅ Found Liverpool row in standings table');
 
   // Get all cells in the row
-  const allCells = Array.from(tottenhamRow.querySelectorAll('td, th'));
-  console.log(`[makeTottenhamPerfect] Total cells: ${allCells.length}`);
+  const allCells = Array.from(liverpoolRow.querySelectorAll('td, th'));
+  console.log(`[makeLiverpoolPerfect] Total cells: ${allCells.length}`);
+  
+  // Standings table rows should have many cells (rank, team, MP, W, D, L, GF, GA, GD, Pts, Last 5)
+  if (allCells.length < 8) {
+    console.log('[makeLiverpoolPerfect] ⚠️ Skipping: Row has too few cells (likely not a standings row)');
+    return false;
+  }
 
   // Find MP (Matches Played) - skip empty cells (like cell 0 which is aria-hidden)
   let mpValue = null;
@@ -55,11 +106,11 @@ function makeTottenhamPerfect() {
   }
 
   if (mpValue === null) {
-    console.log('[makeTottenhamPerfect] ❌ Could not find MP value');
+    console.log('[makeLiverpoolPerfect] ❌ Could not find MP value');
     return false;
   }
 
-  console.log(`[makeTottenhamPerfect] MP: ${mpValue} at cell ${mpIndex}`);
+  console.log(`[makeLiverpoolPerfect] MP: ${mpValue} at cell ${mpIndex}`);
 
   // Helper function to update a cell's value
   const updateCellValue = (cell, newValue, cellName = '') => {
@@ -75,7 +126,7 @@ function makeTottenhamPerfect() {
       let textNode = walker.nextNode();
       if (textNode) {
         textNode.textContent = newValue.toString();
-        console.log(`[makeTottenhamPerfect] ✅ ${cellName}: ${newValue}`);
+        console.log(`[makeLiverpoolPerfect] ✅ ${cellName}: ${newValue}`);
         return true;
       }
     }
@@ -94,7 +145,7 @@ function makeTottenhamPerfect() {
         let textNode = walker.nextNode();
         if (textNode) {
           textNode.textContent = newValue.toString();
-          console.log(`[makeTottenhamPerfect] ✅ ${cellName}: ${newValue}`);
+          console.log(`[makeLiverpoolPerfect] ✅ ${cellName}: ${newValue}`);
           return true;
         }
       }
@@ -110,11 +161,11 @@ function makeTottenhamPerfect() {
     let textNode = walker.nextNode();
     if (textNode) {
       textNode.textContent = newValue.toString();
-      console.log(`[makeTottenhamPerfect] ✅ ${cellName}: ${newValue}`);
+      console.log(`[makeLiverpoolPerfect] ✅ ${cellName}: ${newValue}`);
       return true;
     }
 
-    console.log(`[makeTottenhamPerfect] ❌ Failed to update ${cellName}`);
+    console.log(`[makeLiverpoolPerfect] ❌ Failed to update ${cellName}`);
     return false;
   };
 
@@ -185,7 +236,7 @@ function makeTottenhamPerfect() {
     const resultIcons = cell.querySelectorAll('[class*="imso_gs-r-l-i"], [class*="gs-r-l-i"]');
     if (resultIcons.length >= 3) {
       lastFiveCell = cell;
-      console.log(`[makeTottenhamPerfect] Found Last 5 column at cell ${i} (${resultIcons.length} icons via class)`);
+      console.log(`[makeLiverpoolPerfect] Found Last 5 column at cell ${i} (${resultIcons.length} icons via class)`);
       break;
     }
     
@@ -205,7 +256,7 @@ function makeTottenhamPerfect() {
     
     if (iconLikeElements.length >= 3) {
       lastFiveCell = cell;
-      console.log(`[makeTottenhamPerfect] Found Last 5 column at cell ${i} (${iconLikeElements.length} icon-like elements)`);
+      console.log(`[makeLiverpoolPerfect] Found Last 5 column at cell ${i} (${iconLikeElements.length} icon-like elements)`);
       break;
     }
   }
@@ -213,64 +264,64 @@ function makeTottenhamPerfect() {
   // Fallback: use the last cell
   if (!lastFiveCell && allCells.length > 10) {
     lastFiveCell = allCells[allCells.length - 1];
-    console.log(`[makeTottenhamPerfect] Using last cell as Last 5 column`);
+    console.log(`[makeLiverpoolPerfect] Using last cell as Last 5 column`);
   }
 
   if (lastFiveCell) {
-    console.log('[makeTottenhamPerfect] Updating Last 5 column...');
-    console.log(`[makeTottenhamPerfect] Last 5 cell HTML preview:`, lastFiveCell.outerHTML.substring(0, 300));
+    console.log('[makeLiverpoolPerfect] Updating Last 5 column...');
+    console.log(`[makeLiverpoolPerfect] Last 5 cell HTML preview:`, lastFiveCell.outerHTML.substring(0, 300));
     
     // Strategy 1: Find elements by aria-labelledby (e.g., "l5l-w", "l5l-l", "l5l-d")
     const ariaElements = lastFiveCell.querySelectorAll('[aria-labelledby*="l5l-"]');
-    console.log(`[makeTottenhamPerfect] Found ${ariaElements.length} elements with aria-labelledby l5l-`);
+    console.log(`[makeLiverpoolPerfect] Found ${ariaElements.length} elements with aria-labelledby l5l-`);
     
     // Only update aria-labelledby for matches that have been played (MP value)
     // Total active circles should be i = min(MP, 5)
     const ariaElementsToUpdate = Math.min(mpValue, 5, ariaElements.length);
-    console.log(`[makeTottenhamPerfect] Will update ${ariaElementsToUpdate} aria-labelledby elements (MP=${mpValue}, max=5)`);
+    console.log(`[makeLiverpoolPerfect] Will update ${ariaElementsToUpdate} aria-labelledby elements (MP=${mpValue}, max=5)`);
     
     ariaElements.forEach((elem, index) => {
       // Only update aria-labelledby for matches that have been played
       if (index >= ariaElementsToUpdate) {
-        console.log(`[makeTottenhamPerfect]   Aria element ${index + 1}: Skipping (future match placeholder)`);
+        console.log(`[makeLiverpoolPerfect]   Aria element ${index + 1}: Skipping (future match placeholder)`);
         return; // Skip empty placeholders for future matches
       }
       
       const ariaLabel = elem.getAttribute('aria-labelledby') || '';
-      console.log(`[makeTottenhamPerfect]   Aria element ${index + 1}: aria-labelledby="${ariaLabel}", classes="${elem.className}"`);
+      console.log(`[makeLiverpoolPerfect]   Aria element ${index + 1}: aria-labelledby="${ariaLabel}", classes="${elem.className}"`);
       // Replace loss (l), draw (d), or tie (t) with win (w) in aria-labelledby
       if (ariaLabel.includes('l5l-l') || ariaLabel.includes('l5l-d') || ariaLabel.includes('l5l-t')) {
         const newAriaLabel = ariaLabel.replace(/l5l-[ldt]/g, 'l5l-w');
         elem.setAttribute('aria-labelledby', newAriaLabel);
-        console.log(`[makeTottenhamPerfect]     Updated to: ${newAriaLabel}`);
+        console.log(`[makeLiverpoolPerfect]     Updated to: ${newAriaLabel}`);
       }
     });
     
     // Strategy 2: Find SVG elements (the actual icons)
     const svgIcons = lastFiveCell.querySelectorAll('svg');
-    console.log(`[makeTottenhamPerfect] Found ${svgIcons.length} SVG elements`);
+    console.log(`[makeLiverpoolPerfect] Found ${svgIcons.length} SVG elements`);
     
     // Only update icons for matches that have been played (MP value)
     // Total active circles should be i = min(MP, 5)
     // Leave the remaining icons as empty placeholders for future matches
     const iconsToUpdate = Math.min(mpValue, 5, svgIcons.length);
-    console.log(`[makeTottenhamPerfect] Will update ${iconsToUpdate} icons (MP=${mpValue}, max=5, total icons=${svgIcons.length})`);
-    console.log(`[makeTottenhamPerfect] Active circles: ${iconsToUpdate}, Empty placeholders: ${svgIcons.length - iconsToUpdate}`);
+    console.log(`[makeLiverpoolPerfect] Will update ${iconsToUpdate} icons (MP=${mpValue}, max=5, total icons=${svgIcons.length})`);
+    console.log(`[makeLiverpoolPerfect] Active circles: ${iconsToUpdate}, Empty placeholders: ${svgIcons.length - iconsToUpdate}`);
     
     svgIcons.forEach((svg, index) => {
       // Only update icons for matches that have been played (first i icons where i = min(MP, 5))
       if (index >= iconsToUpdate) {
-        console.log(`[makeTottenhamPerfect]   SVG ${index + 1}: Skipping (future match placeholder, index ${index} >= ${iconsToUpdate})`);
+        console.log(`[makeLiverpoolPerfect]   SVG ${index + 1}: Skipping (future match placeholder, index ${index} >= ${iconsToUpdate})`);
         return; // Skip empty placeholders for future matches
       }
       
       // Ensure first icon (index 0) is always processed (regular green circle with tick, no border)
       if (index === 0) {
-        console.log(`[makeTottenhamPerfect]   SVG ${index + 1}: Processing FIRST icon (regular green circle, no border)`);
+        console.log(`[makeLiverpoolPerfect]   SVG ${index + 1}: Processing FIRST icon (regular green circle, no border)`);
       }
-      console.log(`[makeTottenhamPerfect]   SVG ${index + 1}:`);
-      console.log(`[makeTottenhamPerfect]     Classes: "${svg.className}"`);
-      console.log(`[makeTottenhamPerfect]     ViewBox: "${svg.getAttribute('viewBox')}"`);
+      console.log(`[makeLiverpoolPerfect]   SVG ${index + 1}:`);
+      console.log(`[makeLiverpoolPerfect]     Classes: "${svg.className}"`);
+      console.log(`[makeLiverpoolPerfect]     ViewBox: "${svg.getAttribute('viewBox')}"`);
       
       // Find the parent container that might have win/loss/draw indicators
       const parent = svg.closest('div');
@@ -278,9 +329,9 @@ function makeTottenhamPerfect() {
         const parentAria = parent.getAttribute('aria-labelledby') || '';
         const parentClasses = parent.className || '';
         
-        console.log(`[makeTottenhamPerfect]     Parent div:`);
-        console.log(`[makeTottenhamPerfect]       aria-labelledby: "${parentAria}"`);
-        console.log(`[makeTottenhamPerfect]       classes: "${parentClasses}"`);
+        console.log(`[makeLiverpoolPerfect]     Parent div:`);
+        console.log(`[makeLiverpoolPerfect]       aria-labelledby: "${parentAria}"`);
+        console.log(`[makeLiverpoolPerfect]       classes: "${parentClasses}"`);
         
         // Determine icon type from aria-labelledby
         let iconType = 'unknown';
@@ -288,13 +339,13 @@ function makeTottenhamPerfect() {
         else if (parentAria.includes('l5l-l')) iconType = 'LOSS ✗';
         else if (parentAria.includes('l5l-d')) iconType = 'DRAW -';
         else if (parentAria.includes('l5l-t')) iconType = 'TIE/DRAW -';
-        console.log(`[makeTottenhamPerfect]       Icon type: ${iconType}`);
+        console.log(`[makeLiverpoolPerfect]       Icon type: ${iconType}`);
         
         // Update aria-labelledby if it indicates loss, draw, or tie
         if (parentAria.includes('l5l-l') || parentAria.includes('l5l-d') || parentAria.includes('l5l-t')) {
           const newAriaLabel = parentAria.replace(/l5l-[ldt]/g, 'l5l-w');
           parent.setAttribute('aria-labelledby', newAriaLabel);
-          console.log(`[makeTottenhamPerfect]       Updated aria-labelledby to: "${newAriaLabel}"`);
+          console.log(`[makeLiverpoolPerfect]       Updated aria-labelledby to: "${newAriaLabel}"`);
         }
         
         // Update classes to indicate win
@@ -303,28 +354,28 @@ function makeTottenhamPerfect() {
         newClasses = newClasses.replace(/imso_gs-r-l-i-[ld]/g, 'imso_gs-r-l-i-w');
         if (newClasses !== parentClasses) {
           parent.className = newClasses.trim();
-          console.log(`[makeTottenhamPerfect]       Updated classes to: "${newClasses.trim()}"`);
+          console.log(`[makeLiverpoolPerfect]       Updated classes to: "${newClasses.trim()}"`);
         }
       }
       
       // Ensure SVG has green checkmark (win) - look for checkmark path
       const paths = svg.querySelectorAll('path');
-      console.log(`[makeTottenhamPerfect]     Found ${paths.length} path elements in SVG`);
+      console.log(`[makeLiverpoolPerfect]     Found ${paths.length} path elements in SVG`);
       
       paths.forEach((path, pathIndex) => {
         const pathClass = path.getAttribute('class') || '';
         const pathD = path.getAttribute('d') || '';
         const pathFill = path.getAttribute('fill') || '';
         const pathStroke = path.getAttribute('stroke') || '';
-        console.log(`[makeTottenhamPerfect]       Path ${pathIndex + 1}: class="${pathClass}", fill="${pathFill}", stroke="${pathStroke}"`);
-        console.log(`[makeTottenhamPerfect]       Path ${pathIndex + 1} d attribute: "${pathD.substring(0, 50)}..."`);
+        console.log(`[makeLiverpoolPerfect]       Path ${pathIndex + 1}: class="${pathClass}", fill="${pathFill}", stroke="${pathStroke}"`);
+        console.log(`[makeLiverpoolPerfect]       Path ${pathIndex + 1} d attribute: "${pathD.substring(0, 50)}..."`);
       });
       
       const hasCheckmark = Array.from(paths).some(path => {
         const pathClass = path.getAttribute('class') || '';
         return pathClass.includes('hIg8Hb') || pathClass.includes('check') || pathClass.includes('tick');
       });
-      console.log(`[makeTottenhamPerfect]     Has checkmark: ${hasCheckmark}`);
+      console.log(`[makeLiverpoolPerfect]     Has checkmark: ${hasCheckmark}`);
       
       // Correct checkmark path (user provided)
       const correctCheckmarkPath = 'M9.2 12.28 7.12 10.2 6 11.32l3.2 3.2 6.4-6.4L14.48 7z';
@@ -343,7 +394,7 @@ function makeTottenhamPerfect() {
           if (!isCorrectCheckmark) {
             // Replace with correct checkmark path
             path.setAttribute('d', correctCheckmarkPath);
-            console.log(`[makeTottenhamPerfect]       Replaced hIg8Hb path: "${pathD.substring(0, 40)}..." -> correct checkmark`);
+            console.log(`[makeLiverpoolPerfect]       Replaced hIg8Hb path: "${pathD.substring(0, 40)}..." -> correct checkmark`);
           }
           
           // Always ensure fill (not stroke) for thinner appearance
@@ -374,7 +425,7 @@ function makeTottenhamPerfect() {
             newPath.setAttribute('fill', '#ffffff');
             newPath.style.fill = '#ffffff';
             svg.appendChild(newPath);
-            console.log(`[makeTottenhamPerfect]       Added checkmark path with correct shape`);
+            console.log(`[makeLiverpoolPerfect]       Added checkmark path with correct shape`);
           }
         }
       }
@@ -393,7 +444,7 @@ function makeTottenhamPerfect() {
           path.removeAttribute('stroke');
           // Force fill with !important via style attribute
           path.style.fill = '#34a853';
-          console.log(`[makeTottenhamPerfect]       Path ${pathIndex + 1}: Set circle to green`);
+          console.log(`[makeLiverpoolPerfect]       Path ${pathIndex + 1}: Set circle to green`);
         }
         
         // Checkmark paths: class "hIg8Hb" - make them white checkmarks (use fill, not stroke for thinner)
@@ -409,7 +460,7 @@ function makeTottenhamPerfect() {
           path.removeAttribute('stroke-width');
           path.style.fill = '#ffffff';
           path.style.stroke = 'none';
-          console.log(`[makeTottenhamPerfect]       Path ${pathIndex + 1}: Set checkmark to white (fill only, no stroke)`);
+          console.log(`[makeLiverpoolPerfect]       Path ${pathIndex + 1}: Set checkmark to white (fill only, no stroke)`);
         }
       });
       
@@ -420,7 +471,7 @@ function makeTottenhamPerfect() {
       const isLastActive = index === iconsToUpdate - 1;
       
       if (isLastActive) {
-        console.log(`[makeTottenhamPerfect]     Adding white border to last (oldest) icon (index ${index})`);
+        console.log(`[makeLiverpoolPerfect]     Adding white border to last (oldest) icon (index ${index})`);
         const whiteCirclePath = 'M11 3a8 8 0 1 1 0 16 8 8 0 0 1 0-16';
         const existingPaths = Array.from(svg.querySelectorAll('path'));
         
@@ -431,7 +482,7 @@ function makeTottenhamPerfect() {
           // Remove malformed paths that look corrupted
           if (pathD.includes('990000') || (pathD.includes('M11 2a9 90 100') && pathClass.includes('hIg8Hb'))) {
             path.remove();
-            console.log(`[makeTottenhamPerfect]     Removed malformed path: "${pathD}"`);
+            console.log(`[makeLiverpoolPerfect]     Removed malformed path: "${pathD}"`);
           }
         });
         
@@ -476,7 +527,7 @@ function makeTottenhamPerfect() {
               svg.appendChild(newWhiteBorder);
             }
           }
-          console.log(`[makeTottenhamPerfect]     SVG ${index + 1} (last active): Added white circle border with class oUnRP`);
+          console.log(`[makeLiverpoolPerfect]     SVG ${index + 1} (last active): Added white circle border with class oUnRP`);
         } else {
           // Ensure existing white border has correct class and styling
           whiteBorderPath.setAttribute('class', 'oUnRP');
@@ -487,7 +538,7 @@ function makeTottenhamPerfect() {
           whiteBorderPath.style.fill = 'none';
           whiteBorderPath.style.stroke = '#ffffff';
           whiteBorderPath.style.strokeWidth = '1';
-          console.log(`[makeTottenhamPerfect]     SVG ${index + 1} (last active): Ensured white circle border is styled correctly`);
+          console.log(`[makeLiverpoolPerfect]     SVG ${index + 1} (last active): Ensured white circle border is styled correctly`);
         }
       }
       
@@ -500,12 +551,12 @@ function makeTottenhamPerfect() {
         parentDiv.style.color = '#34a853';
       }
       
-      console.log(`[makeTottenhamPerfect]     SVG ${index + 1}: Applied green win styling`);
+      console.log(`[makeLiverpoolPerfect]     SVG ${index + 1}: Applied green win styling`);
     });
     
     // Strategy 3: Find all div containers with classes indicating results
     const resultDivs = lastFiveCell.querySelectorAll('div[class*="l5l-"], div[aria-labelledby*="l5l-"]');
-    console.log(`[makeTottenhamPerfect] Found ${resultDivs.length} result divs`);
+    console.log(`[makeLiverpoolPerfect] Found ${resultDivs.length} result divs`);
     
     resultDivs.forEach(div => {
       const classes = div.className || '';
@@ -527,7 +578,7 @@ function makeTottenhamPerfect() {
     
     // Strategy 4: Find all elements with class patterns indicating win/loss/draw
     const allResultElements = lastFiveCell.querySelectorAll('[class*="imso_gs-r-l-i"], [class*="gs-r-l-i"], [class*="l5l-"]');
-    console.log(`[makeTottenhamPerfect] Found ${allResultElements.length} elements with result classes`);
+    console.log(`[makeLiverpoolPerfect] Found ${allResultElements.length} elements with result classes`);
     
     allResultElements.forEach(elem => {
       const classes = elem.className || '';
@@ -549,30 +600,30 @@ function makeTottenhamPerfect() {
     
     // Final pass: Force all result divs to show as wins and update SVG colors
     const finalResultDivs = lastFiveCell.querySelectorAll('div[aria-labelledby*="l5l-"]');
-    console.log(`[makeTottenhamPerfect] Final pass: Found ${finalResultDivs.length} result divs`);
+    console.log(`[makeLiverpoolPerfect] Final pass: Found ${finalResultDivs.length} result divs`);
     
     // Only process icons for matches that have been played (MP value)
     // Total active circles should be i = min(MP, 5)
     const finalDivsToUpdate = Math.min(mpValue, 5, finalResultDivs.length);
-    console.log(`[makeTottenhamPerfect] Final pass: Will update ${finalDivsToUpdate} divs (MP=${mpValue}, max=5)`);
+    console.log(`[makeLiverpoolPerfect] Final pass: Will update ${finalDivsToUpdate} divs (MP=${mpValue}, max=5)`);
     
     finalResultDivs.forEach((div, index) => {
       // Only update divs for matches that have been played (first i divs where i = min(MP, 5))
       if (index >= finalDivsToUpdate) {
-        console.log(`[makeTottenhamPerfect] Final pass: Skipping div ${index + 1} (future match placeholder, index ${index} >= ${finalDivsToUpdate})`);
+        console.log(`[makeLiverpoolPerfect] Final pass: Skipping div ${index + 1} (future match placeholder, index ${index} >= ${finalDivsToUpdate})`);
         return; // Skip empty placeholders for future matches
       }
       
       // Ensure first div (index 0) is always processed (regular green circle with tick, no border)
       if (index === 0) {
-        console.log(`[makeTottenhamPerfect] Final pass: Processing FIRST div (regular green circle, no border)`);
+        console.log(`[makeLiverpoolPerfect] Final pass: Processing FIRST div (regular green circle, no border)`);
       }
       const ariaLabel = div.getAttribute('aria-labelledby') || '';
       if (ariaLabel.includes('l5l-')) {
         // Ensure aria-labelledby is set to win
         if (!ariaLabel.includes('l5l-w')) {
           div.setAttribute('aria-labelledby', ariaLabel.replace(/l5l-[ldt]/g, 'l5l-w'));
-          console.log(`[makeTottenhamPerfect] Final pass: Updated div ${index + 1} to win`);
+          console.log(`[makeLiverpoolPerfect] Final pass: Updated div ${index + 1} to win`);
         }
         
         // Find SVG inside and force green
@@ -601,7 +652,7 @@ function makeTottenhamPerfect() {
               if (!isCorrectCheckmark && !isCircle) {
                 path.setAttribute('d', correctCheckmarkPath);
                 path.setAttribute('class', 'hIg8Hb'); // Ensure it has the checkmark class
-                console.log(`[makeTottenhamPerfect] Final pass: Replaced path "${currentPath.substring(0, 30)}..." with correct checkmark`);
+                console.log(`[makeLiverpoolPerfect] Final pass: Replaced path "${currentPath.substring(0, 30)}..." with correct checkmark`);
               }
               
               // Always ensure fill (not stroke) for thinner appearance
@@ -622,7 +673,7 @@ function makeTottenhamPerfect() {
           const isLastActive = index === finalDivsToUpdate - 1;
           
           if (isLastActive) {
-            console.log(`[makeTottenhamPerfect] Final pass: Adding white border to last (oldest) icon (index ${index})`);
+            console.log(`[makeLiverpoolPerfect] Final pass: Adding white border to last (oldest) icon (index ${index})`);
             const whiteCirclePath = 'M11 3a8 8 0 1 1 0 16 8 8 0 0 1 0-16';
             const existingPaths = Array.from(svg.querySelectorAll('path'));
             
@@ -633,7 +684,7 @@ function makeTottenhamPerfect() {
               // Remove malformed paths that look corrupted
               if (pathD.includes('990000') || (pathD.includes('M11 2a9 90 100') && pathClass.includes('hIg8Hb'))) {
                 path.remove();
-                console.log(`[makeTottenhamPerfect] Final pass: Removed malformed path: "${pathD}"`);
+                console.log(`[makeLiverpoolPerfect] Final pass: Removed malformed path: "${pathD}"`);
               }
             });
             
@@ -678,7 +729,7 @@ function makeTottenhamPerfect() {
                   svg.appendChild(newWhiteBorder);
                 }
               }
-              console.log(`[makeTottenhamPerfect] Final pass: Added white circle border to last active icon with class oUnRP`);
+              console.log(`[makeLiverpoolPerfect] Final pass: Added white circle border to last active icon with class oUnRP`);
             } else {
               // Ensure existing white border has correct class and styling
               whiteBorderPath.setAttribute('class', 'oUnRP');
@@ -689,7 +740,7 @@ function makeTottenhamPerfect() {
               whiteBorderPath.style.fill = 'none';
               whiteBorderPath.style.stroke = '#ffffff';
               whiteBorderPath.style.strokeWidth = '1';
-              console.log(`[makeTottenhamPerfect] Final pass: Ensured white circle border on last active icon is styled correctly`);
+              console.log(`[makeLiverpoolPerfect] Final pass: Ensured white circle border on last active icon is styled correctly`);
             }
           }
         }
@@ -697,10 +748,10 @@ function makeTottenhamPerfect() {
     });
     
     // Summary: Show all circles found
-    console.log(`[makeTottenhamPerfect] ===== SUMMARY =====`);
-    console.log(`[makeTottenhamPerfect] Total SVG circles found: ${svgIcons.length}`);
-    console.log(`[makeTottenhamPerfect] Total aria-labelledby elements: ${ariaElements.length}`);
-    console.log(`[makeTottenhamPerfect] Total result divs: ${resultDivs.length}`);
+    console.log(`[makeLiverpoolPerfect] ===== SUMMARY =====`);
+    console.log(`[makeLiverpoolPerfect] Total SVG circles found: ${svgIcons.length}`);
+    console.log(`[makeLiverpoolPerfect] Total aria-labelledby elements: ${ariaElements.length}`);
+    console.log(`[makeLiverpoolPerfect] Total result divs: ${resultDivs.length}`);
     
     // List each circle with its status
     svgIcons.forEach((svg, index) => {
@@ -711,24 +762,24 @@ function makeTottenhamPerfect() {
       else if (parentAria.includes('l5l-l')) status = 'LOSS ✗';
       else if (parentAria.includes('l5l-d')) status = 'DRAW -';
       else if (parentAria.includes('l5l-t')) status = 'TIE/DRAW -';
-      console.log(`[makeTottenhamPerfect] Circle ${index + 1}: ${status} (aria-labelledby: "${parentAria}")`);
+      console.log(`[makeLiverpoolPerfect] Circle ${index + 1}: ${status} (aria-labelledby: "${parentAria}")`);
     });
     
-    console.log(`[makeTottenhamPerfect] ✅ Last 5: updated all icons to wins`);
+    console.log(`[makeLiverpoolPerfect] ✅ Last 5: updated all icons to wins`);
   } else {
-    console.log('[makeTottenhamPerfect] ❌ Could not find Last 5 column');
+    console.log('[makeLiverpoolPerfect] ❌ Could not find Last 5 column');
   }
 
-  console.log('[makeTottenhamPerfect] ✅ Complete!');
+  console.log('[makeLiverpoolPerfect] ✅ Complete!');
   return true;
 }
 
 // Initialize when page is ready
-function initMakeTottenhamPerfect() {
+function initMakeLiverpoolPerfect() {
   function attemptUpdate() {
     if (document.readyState === 'complete' && document.body) {
       setTimeout(() => {
-        const success = makeTottenhamPerfect();
+        const success = makeLiverpoolPerfect();
         if (!success) {
           setTimeout(attemptUpdate, 500);
         }
@@ -747,22 +798,22 @@ function initMakeTottenhamPerfect() {
 }
 
 // Make functions available globally for widget
-window.makeTottenhamPerfect = makeTottenhamPerfect;
-window.initMakeTottenhamPerfect = initMakeTottenhamPerfect;
+window.makeLiverpoolPerfect = makeLiverpoolPerfect;
+window.initMakeLiverpoolPerfect = initMakeLiverpoolPerfect;
 
 // Auto-run if this script is loaded directly
 if (typeof window !== 'undefined') {
   // Check settings before initializing
-  chrome.storage.local.get(['tottenhamSettings'], (result) => {
-    const settings = result.tottenhamSettings || { enabled: true };
+  chrome.storage.local.get(['liverpoolSettings'], (result) => {
+    const settings = result.liverpoolSettings || { enabled: true };
     if (settings.enabled !== false) {
-      initMakeTottenhamPerfect();
+      initMakeLiverpoolPerfect();
     }
   });
 }
 
 // Export for use in other files
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { makeTottenhamPerfect, initMakeTottenhamPerfect };
+  module.exports = { makeLiverpoolPerfect, initMakeLiverpoolPerfect };
 }
 
